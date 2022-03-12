@@ -2,4 +2,4 @@
 
 [PARAMS]
 #Length of a time unit, corresponding to 1 second in the factory (in seconds)
-time_unit = 3
+time_unit = 0.001

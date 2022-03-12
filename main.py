@@ -15,7 +15,7 @@ def main():
     my_factory = FoobarFactory()
     my_factory.add_robot()
 
-    my_factory.launch_production()
+    my_factory.take_over_foobar_market()
 
 
 class FoobarFactory:
@@ -23,23 +23,34 @@ class FoobarFactory:
 
     def __init__(self):
         self.warehouse = Warehouse()
-        self.robot = None
+        self.robots = []
+        self.wallet = 0
 
     def add_robot(self):
-        self.robot = Robot(self)
+        self.robots.append(Robot(self))
 
-    def launch_production(self):
-        while True:
-            print(f"{self.warehouse.get_foobar()} foobars in the warehouse")
-            producton_code = self.robot.assemble_foobar()
-            if producton_code == 0:
-                pass
-            elif producton_code == 1:
-                pass
-            elif producton_code == 'need foo':
-                self.robot.mine_foo()
-            elif producton_code == 'need bar':
-                self.robot.mine_bar()
+    def take_over_foobar_market(self):
+        round_counter = 0
+        while len(self.robots) < 30:
+            print(f"round {round_counter} | {self.warehouse.get_foobar()} foobars | €{self.wallet} | {len(self.robots)} robots")
+            round_counter += 1
+            take_over_code = self.robots[0].buy_robot()
+            if take_over_code == "need foo":
+                self.robots[0].mine_foo()
+            elif take_over_code == "need cash":
+                sale_code = self.robots[0].sell_foobar()
+                if sale_code == 'need foobar':
+                    self.produce_foobars()
+            else:
+                self.robots.append(Robot(self))
+        print("Foobar market domination achieved. Next, world.")
+
+    def produce_foobars(self):
+        producton_code = self.robots[0].assemble_foobar()
+        if producton_code == 'need foo':
+            self.robots[0].mine_foo()
+        elif producton_code == 'need bar':
+            self.robots[0].mine_bar()
 
 
 class Robot:
@@ -48,6 +59,7 @@ class Robot:
 
     def __init__(self, parent):
         self.warehouse = parent.warehouse
+        self.wallet = parent.wallet
 
     def mine_foo(self):
         """occupies the robot for 1 second"""
@@ -76,7 +88,6 @@ class Robot:
             print('Not enough bar to assemble')
             return 'need bar'
 
-        print("Assembling foobar")
         self.warehouse.take('foo')
         self.warehouse.take('bar')
         time.sleep(2*TIME_UNIT)
@@ -91,11 +102,44 @@ class Robot:
             self.warehouse.store('bar')
             return 1
 
+    def sell_foobar(self):
+        """Sell foobar: 10s to sell from 1 to 5 foobar, we earn €1 per foobar sold"""
+
+        print("Selling foobar")
+        if self.warehouse.get_foobar() < 4:
+            print('Not enough foobar to sell')
+            return 'need foobar'
+
+        foobar_market = []
+        while self.warehouse.get_foobar() >= 1 and len(foobar_market) <= 5:
+            foobar_market.append(self.warehouse.take_foobar())
+        time.sleep(10*TIME_UNIT)
+        foobar_batch = len(foobar_market)
+        self.wallet += foobar_batch
+        foobar_market.clear()
+        print(f"Sold {foobar_batch} foobar(s)\n")
+        return 0
+
+    def buy_robot(self):
+        print("Trying to buy robot")
+        if self.warehouse.get('foo') < 6:
+            print('Not enough foo to buy robot')
+            return 'need foo'
+
+        if self.wallet < 3:
+            print('Not enough cash to buy robot\n')
+            return 'need cash'
+
+        print("Buying robot\n")
+        self.warehouse.take('foo', 6)
+        self.wallet -= 3
+        return 0
+
 
 class Warehouse:
     """Stores raw materials and finished products"""
     def __init__(self):
-        self._warehouse = {'foo':0, 'bar':0, 'foobar':{}}
+        self._warehouse = {'foo':0, 'bar':0, 'foobar':[]}
 
     def get(self, raw_material):
         return self._warehouse[raw_material]
@@ -103,13 +147,9 @@ class Warehouse:
     def get_foobar(self):
         return len(self._warehouse['foobar'])
 
-    def take(self, raw_material):
-        if self._warehouse[raw_material]<1:
-            print(f"No {raw_material} in warehouse")
-            if raw_material == 'foo':
-                return 2
-            if raw_material == 'bar':
-                return 3
+    def take(self, raw_material, amount=1):
+        if self._warehouse[raw_material]<amount:
+            raise Exception(f"{self._warehouse[raw_material]} {raw_material} in warehouse, cannot take {amount}")
         self._warehouse[raw_material] -= 1
         return 0
 
@@ -118,12 +158,17 @@ class Warehouse:
         return 0
 
     def store_foobar(self, foobar):
-        self._warehouse['foobar'][foobar.get_id()] = foobar
+        self._warehouse['foobar'].append(foobar)
+
+    def take_foobar(self):
+        if len(self._warehouse['foobar']) < 1:
+            raise Exception(f"No foobar in warehouse, cannot take!")
+        return self._warehouse['foobar'].pop()
 
 class Foobar:
     """Foobar objects with a serial number"""
 
-    #Alternative implemetation 
+    #Alternative implemetation
     """import itertools
     id_iter = itertools.count()
     def __init__(self):
