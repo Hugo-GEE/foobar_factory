@@ -25,6 +25,11 @@ class FoobarFactory:
         self.warehouse = Warehouse()
         self.robots = []
         self.wallet = 0
+        self.clock = 0
+
+    def time(self, duration):
+        time.sleep(duration*TIME_UNIT)
+        self.clock += duration
 
     def add_robot(self):
         self.robots.append(Robot(self))
@@ -32,7 +37,7 @@ class FoobarFactory:
     def take_over_foobar_market(self):
         round_counter = 0
         while len(self.robots) < 30:
-            print(f"round {round_counter} | {self.warehouse.get_foobar()} foobars | €{self.wallet} | {len(self.robots)} robots")
+            print(f"round {round_counter} | time = {round(self.clock/60, 1)} min | {self.warehouse.get_foobar()} foobars | €{self.wallet} | {len(self.robots)} robots")
             round_counter += 1
             take_over_code = self.robots[0].buy_robot()
             if take_over_code == "need foo":
@@ -60,18 +65,19 @@ class Robot:
     def __init__(self, parent):
         self.warehouse = parent.warehouse
         self.wallet = parent.wallet
+        self.time = parent.time
 
     def mine_foo(self):
         """occupies the robot for 1 second"""
         print("Mining foo\n")
-        time.sleep(TIME_UNIT)
+        self.time(1)
         result = self.warehouse.store('foo')
         return result
 
     def mine_bar(self):
         """keeps the robot busy for a random time between 0.5 and 2 seconds"""
         print("Mining bar\n")
-        time.sleep(random.uniform(0.5*TIME_UNIT, 2*TIME_UNIT))
+        self.time(random.uniform(0.5, 2))
         result = self.warehouse.store('bar')
         return result
 
@@ -90,7 +96,7 @@ class Robot:
 
         self.warehouse.take('foo')
         self.warehouse.take('bar')
-        time.sleep(2*TIME_UNIT)
+        self.time(2)
         if random.randint(1, 10) <= 6:
             print("Assembly successful")
             foobar = Foobar()
@@ -113,7 +119,7 @@ class Robot:
         foobar_market = []
         while self.warehouse.get_foobar() >= 1 and len(foobar_market) <= 5:
             foobar_market.append(self.warehouse.take_foobar())
-        time.sleep(10*TIME_UNIT)
+        self.time(10)
         foobar_batch = len(foobar_market)
         self.wallet += foobar_batch
         foobar_market.clear()
