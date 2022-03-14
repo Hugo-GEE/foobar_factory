@@ -169,42 +169,22 @@ class Robot:
 class Warehouse:
     """Stores raw materials and finished products"""
     def __init__(self):
-        self._warehouse = {'foo':0, 'bar':0, 'foobar':[]}
+        self._warehouse = {'foo':[], 'bar':[], 'foobar':[]}
 
-    def get(self, raw_material):
-        return self._warehouse[raw_material]
+    def get(self, material_type):
+        return len(self._warehouse[material_type])
 
-    def get_foobar(self):
-        return len(self._warehouse['foobar'])
-
-    def take(self, raw_material, amount=1):
-        if self._warehouse[raw_material]<amount:
-            raise Exception(f"{self._warehouse[raw_material]} {raw_material} in warehouse, cannot take {amount}")
-        self._warehouse[raw_material] -= 1
-        return 0
+    def take(self, material_type, amount=1):
+        if self.get(material_type)<amount:
+            raise Exception(f"{self.get(material_type)} {material_type} in warehouse, cannot take {amount}")
+        return self._warehouse[material_type].pop()
 
     def store(self, raw_material):
-        self._warehouse[raw_material] += 1
-        return 0
+        self._warehouse[raw_material.material_type].append(raw_material)
 
-    def store_foobar(self, foobar):
-        self._warehouse['foobar'].append(foobar)
 
-    def take_foobar(self):
-        if len(self._warehouse['foobar']) < 1:
-            raise Exception(f"No foobar in warehouse, cannot take!")
-        return self._warehouse['foobar'].pop()
-
-class Foobar:
-    """Foobar objects with a serial number"""
-
-    #Alternative implemetation
-    """import itertools
-    id_iter = itertools.count()
-    def __init__(self):
-        self.id = next(BarFoo.id_iter)"""
-
-    serial_count = 0
+class RawMaterial:
+    """Parent class of materials with a serial number"""
 
     @classmethod
     def incr(self):
@@ -213,14 +193,27 @@ class Foobar:
 
     def __init__(self):
         self.serial_number = self.incr()
+        self.material_type = self.__class__.__name__.lower()
 
     def get_id(self):
         return self.serial_number
 
     def __repr__(self):
-        return f"Foobar number {self.get_id()}"
+        return f"{self.material_type} number {self.get_id()}"
+
+class Foo(RawMaterial):
+    serial_count = 0
+
+class Bar(RawMaterial):
+    serial_count = 0
+
+class Foobar(RawMaterial):
+    def __init__(self, foo, bar):
+        self.serial_number = str(foo.get_id()) + str(bar.get_id())
+        self.material_type = self.__class__.__name__.lower()
+
 
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    asyncio.run(main(30))
