@@ -2,7 +2,7 @@
 
 [PARAMS]
 #Length of a time unit, corresponding to 1 second in the factory (in seconds)
-time_unit = 0.01
+time_unit = 0.001
 
 [ROBOT_NAMES]
 robot_names = Bender,Hal,R2D2,C3P0,Wall-E,Deep_blue,Tars,Astro_boy,Doraemon,Cyberman,Kitt,Awesom_O,Daft_punk,Iron_giant,Optimus_prime,Roomba

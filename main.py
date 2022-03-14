@@ -13,7 +13,7 @@ TIME_UNIT = float(config['PARAMS']['time_unit'])
 ROBOT_NAMES = config['ROBOT_NAMES']['robot_names'].split(',')
 random.shuffle(ROBOT_NAMES)
 ROBOT_OFFSET = len(ROBOT_NAMES)
-VERBOSE = 'v'
+VERBOSE = 'vv'
 
 def verboseprint(verbose_level, *args):
     if VERBOSE == 'vvv':
@@ -37,7 +37,7 @@ async def main(robots_to_finish = 30):
                             for robot in foobar_factory.robots])
 
     verboseprint('v', foobar_factory.report(final=True))
-    verboseprint('v', "Foobar market domination achieved. Next, world.\n")
+    verboseprint('v', "\nFoobar market domination achieved. Next, world.\n")
 
 
 
@@ -63,7 +63,7 @@ class FoobarFactory:
     async def take_over_foobar_market(self, robot):
         self.round_counter += 1
         verboseprint('vv', self.report())
-        take_over_code = robot.buy_robot()
+        take_over_code = await robot.buy_robot()
         if take_over_code == "need foo":
             await robot.mine_foo()
         elif take_over_code == "need cash":
@@ -75,16 +75,16 @@ class FoobarFactory:
 
     def report(self, final=False):
         round_counter = f"round {self.round_counter}"
-        cum_time =  f"Cumulated time {round(self.clock*TIME_UNIT, int(-math.log(TIME_UNIT)))}s"
+        cum_time =  f"Cumulated time {round(self.clock*TIME_UNIT, int(-math.log(TIME_UNIT)/3))}s"
         foobars = f"{self.warehouse.get('foobar')} foobars"
         cash = f"€{self.wallet}"
         robots = f"{len(self.robots)} robots"
         parameters = [round_counter, cum_time, foobars, cash, robots]
         if final:
-            real_time = f"Real time = {round(time.time() - self.start_time, int(-math.log(TIME_UNIT)))}s"
-            cpu_time = f"Process time = {round(time.process_time() - self.start_cpu_time, int(-math.log(TIME_UNIT)))}s"
+            real_time = f"Real time = {round(time.time() - self.start_time, int(-math.log(TIME_UNIT)/3))}s"
+            cpu_time = f"Process time = {round(time.process_time() - self.start_cpu_time, int(-math.log(TIME_UNIT)/3))}s"
             parameters += [real_time, cpu_time]
-        return " | ".join(parameters)
+        return '\n\t' + " | ".join(parameters) + "\n"
 
 
 class Robot:
@@ -106,9 +106,18 @@ class Robot:
         self.warehouse = parent.warehouse
         self.wallet = parent.wallet
         self.time = parent.time
+        self.activity = None
+
+    async def manage_activity(self, activity):
+        if self.activity != activity:
+            verboseprint('vvv', f"[{self.name}] changing from {self.activity} to {activity}")
+            await self.time(5)
+            self.activity = activity
 
     async def mine_foo(self):
         """occupies the robot for 1 second"""
+
+        await self.manage_activity("mining foo")
         verboseprint('vv', f"[{self.name}] Mining foo\n")
         await self.time(1)
         result = self.warehouse.store((mined_foo := Foo()))
@@ -118,6 +127,8 @@ class Robot:
 
     async def mine_bar(self):
         """keeps the robot busy for a random time between 0.5 and 2 seconds"""
+
+        await self.manage_activity("mining bar")
         verboseprint('vv', f"[{self.name}] Mining bar\n")
         await self.time(random.uniform(0.5, 2))
         result = self.warehouse.store((mined_bar := Bar()))
@@ -128,6 +139,7 @@ class Robot:
         """Assembling a foobar from a foo and a bar: keeps the robot busy for 2 seconds.
         The operation has a 60% chance of success; in case of failure the bar can be reused, the foo is lost"""
 
+        await self.manage_activity("assembling foobar")
         verboseprint('vv', f"[{self.name}] Trying to assemble foobar")
         if self.warehouse.get('foo') < 1:
             verboseprint('vv', f"[{self.name}] Not enough foo to assemble")
@@ -157,10 +169,10 @@ class Robot:
         elif producton_code == 'need bar':
             await self.mine_bar()
 
-
     async def sell_foobar(self):
         """Sell foobar: 10s to sell from 1 to 5 foobar, we earn €1 per foobar sold"""
 
+        await self.manage_activity("selling foobar")
         verboseprint('vv', f"[{self.name}] Selling foobar")
         if self.warehouse.get('foobar') < 5:
             verboseprint('vv', f"[{self.name}] Not enough foobar to sell")
@@ -176,7 +188,8 @@ class Robot:
         verboseprint('vv', f"[{self.name}] Sold {foobar_batch} foobar(s)\n")
         return 0
 
-    def buy_robot(self):
+    async def buy_robot(self):
+        await self.manage_activity("buying robot")
         verboseprint('vv', f"[{self.name}] Trying to buy robot")
         if self.warehouse.get('foo') < 6:
             verboseprint('vv', f"[{self.name}] Not enough foo to buy robot")
