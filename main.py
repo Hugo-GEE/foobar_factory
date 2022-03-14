@@ -1,6 +1,7 @@
 import time
 import random
 import configparser
+import asyncio
 
 
 
@@ -8,14 +9,23 @@ config = configparser.ConfigParser()
 config.read("config")
 
 TIME_UNIT = float(config['PARAMS']['time_unit'])
+ROBOT_NAMES = config['ROBOT_NAMES']['robot_names'].split(',')
+ROBOT_OFFSET = len(ROBOT_NAMES)
 
 
-def main():
+
+async def main():
     """Instantiate Robots and produce foobars"""
-    my_factory = FoobarFactory()
-    my_factory.add_robot()
+    foobar_factory = FoobarFactory()
+    foobar_factory.add_robot()
+    foobar_factory.add_robot()
+    while len(foobar_factory.robots) < 30:
+        await asyncio.gather(
+                            *[foobar_factory.take_over_foobar_market(robot)
+                            for robot in foobar_factory.robots])
 
-    my_factory.take_over_foobar_market()
+    print("Foobar market domination achieved. Next, world.")
+
 
 
 class FoobarFactory:
@@ -27,116 +37,130 @@ class FoobarFactory:
         self.wallet = 0
         self.clock = 0
 
-    def time(self, duration):
-        time.sleep(duration*TIME_UNIT)
+    async def time(self, duration):
+        await asyncio.sleep(duration*TIME_UNIT)
         self.clock += duration
 
     def add_robot(self):
         self.robots.append(Robot(self))
 
-    def take_over_foobar_market(self):
+    async def take_over_foobar_market(self, robot):
         round_counter = 0
-        while len(self.robots) < 30:
-            print(f"round {round_counter} | time = {round(self.clock/60, 1)} min | {self.warehouse.get_foobar()} foobars | €{self.wallet} | {len(self.robots)} robots")
-            round_counter += 1
-            take_over_code = self.robots[0].buy_robot()
-            if take_over_code == "need foo":
-                self.robots[0].mine_foo()
-            elif take_over_code == "need cash":
-                sale_code = self.robots[0].sell_foobar()
-                if sale_code == 'need foobar':
-                    self.produce_foobars()
-            else:
-                self.robots.append(Robot(self))
-        print("Foobar market domination achieved. Next, world.")
-
-    def produce_foobars(self):
-        producton_code = self.robots[0].assemble_foobar()
-        if producton_code == 'need foo':
-            self.robots[0].mine_foo()
-        elif producton_code == 'need bar':
-            self.robots[0].mine_bar()
+        print(f"""round {round_counter} |
+                  time = {round(self.clock/60, 1)} min |
+                  {self.warehouse.get_foobar()} foobars |
+                  €{self.wallet} |
+                  {len(self.robots)} robots""")
+        round_counter += 1
+        take_over_code = robot.buy_robot()
+        if take_over_code == "need foo":
+            await robot.mine_foo()
+        elif take_over_code == "need cash":
+            sale_code = await robot.sell_foobar()
+            if sale_code == "need foobar":
+                await robot.produce_foobars()
+        else:
+            self.add_robot()
 
 
 class Robot:
 
     """Foobar production robot """
 
+    robot_offest = ROBOT_OFFSET
+
+    @classmethod
+    def incr(self):
+        if len(ROBOT_NAMES) >= 1:
+            return ROBOT_NAMES.pop()
+        else:
+            self.robot_offest += 1
+            return f"robot_{self.robot_offest }"
+
     def __init__(self, parent):
+        self.name = self.incr()
         self.warehouse = parent.warehouse
         self.wallet = parent.wallet
         self.time = parent.time
 
-    def mine_foo(self):
+    async def mine_foo(self):
         """occupies the robot for 1 second"""
-        print("Mining foo\n")
-        self.time(1)
+        print(f"[{self.name}] Mining foo\n")
+        await self.time(1)
         result = self.warehouse.store('foo')
         return result
 
-    def mine_bar(self):
+    async def mine_bar(self):
         """keeps the robot busy for a random time between 0.5 and 2 seconds"""
-        print("Mining bar\n")
-        self.time(random.uniform(0.5, 2))
+        print(f"[{self.name}] Mining bar\n")
+        await self.time(random.uniform(0.5, 2))
         result = self.warehouse.store('bar')
         return result
 
-    def assemble_foobar(self):
+    async def assemble_foobar(self):
         """Assembling a foobar from a foo and a bar: keeps the robot busy for 2 seconds.
         The operation has a 60% chance of success; in case of failure the bar can be reused, the foo is lost"""
 
-        print("Trying to assemble foobar")
+        print(f"[{self.name}] Trying to assemble foobar")
         if self.warehouse.get('foo') < 1:
-            print('Not enough foo to assemble')
+            print(f"[{self.name}] Not enough foo to assemble")
             return 'need foo'
 
         if self.warehouse.get('bar') < 1:
-            print('Not enough bar to assemble')
+            print(f"{self.name} Not enough bar to assemble")
             return 'need bar'
 
         self.warehouse.take('foo')
         self.warehouse.take('bar')
-        self.time(2)
+        await self.time(2)
         if random.randint(1, 10) <= 6:
             print("Assembly successful")
             foobar = Foobar()
-            print(f"{foobar} is being stored\n")
+            print(f"[{self.name}] {foobar} is being stored\n")
             self.warehouse.store_foobar(foobar)
             return 0
         else:
-            print("Assembly failed\n")
+            print(f"[{self.name}] Assembly failed\n")
             self.warehouse.store('bar')
             return 1
 
-    def sell_foobar(self):
+    async def produce_foobars(self):
+        producton_code = await self.assemble_foobar()
+        if producton_code == 'need foo':
+            await self.mine_foo()
+        elif producton_code == 'need bar':
+            await self.mine_bar()
+
+
+    async def sell_foobar(self):
         """Sell foobar: 10s to sell from 1 to 5 foobar, we earn €1 per foobar sold"""
 
         print("Selling foobar")
         if self.warehouse.get_foobar() < 4:
-            print('Not enough foobar to sell')
+            print(f"{self.name} Not enough foobar to sell")
             return 'need foobar'
 
         foobar_market = []
         while self.warehouse.get_foobar() >= 1 and len(foobar_market) <= 5:
             foobar_market.append(self.warehouse.take_foobar())
-        self.time(10)
+        await self.time(10)
         foobar_batch = len(foobar_market)
         self.wallet += foobar_batch
         foobar_market.clear()
-        print(f"Sold {foobar_batch} foobar(s)\n")
+        print(f"[{self.name}] Sold {foobar_batch} foobar(s)\n")
         return 0
 
     def buy_robot(self):
         print("Trying to buy robot")
         if self.warehouse.get('foo') < 6:
-            print('Not enough foo to buy robot')
+            print(f"[{self.name}] Not enough foo to buy robot")
             return 'need foo'
 
         if self.wallet < 3:
-            print('Not enough cash to buy robot\n')
+            print(f"[{self.name}] Not enough cash to buy robot\n")
             return 'need cash'
 
-        print("Buying robot\n")
+        print(f"[{self.name}] Buying robot\n")
         self.warehouse.take('foo', 6)
         self.wallet -= 3
         return 0
@@ -199,4 +223,4 @@ class Foobar:
 
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())
