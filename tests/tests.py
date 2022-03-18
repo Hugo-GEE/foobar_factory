@@ -3,8 +3,6 @@ import json
 from main import *
 from io import StringIO
 
-VERBOSE = 'vvv'
-
 
 class TestFoobarFactory(unittest.IsolatedAsyncioTestCase):
 
