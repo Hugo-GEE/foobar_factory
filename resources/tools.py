@@ -1,3 +1,4 @@
+from __future__ import annotations
 import configparser
 import argparse
 import random
@@ -18,14 +19,13 @@ ROBOT_OFFSET = len(ROBOT_NAMES)
 
 TIME_UNIT = float(config['PARAMS']['time_unit'])
 
-
 ap = argparse.ArgumentParser()
 ap.add_argument("-r", "--robots", required=True, help="Number of robots to attain foobar market domination")
 ap.add_argument("-v", "--verbose", required=False, help="Level of verbosity :'debug' or 'info' (none by default)")
 args = vars(ap.parse_args())
 
 
-def report(factory, round_counter, final:bool=False, json:bool=False):
+def report(factory:FoobarFactory, round_counter:int, final:bool=False, json:bool=False)  -> str:
     "Produces a report of some key metrics of factory."
     round_counter = f"round {round_counter}"
     foobars = f"{factory.warehouse.get('foobar')} foobars"

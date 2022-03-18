@@ -1,9 +1,11 @@
+from __future__ import annotations
 import time
 import math
 import random
 import configparser
 import asyncio
 import logging
+from typing import Union
 from resources.robots import Robot
 from resources.tools import *
 
@@ -21,7 +23,7 @@ class FoobarFactory:
         self.start_time = time.time()
         self.start_cpu_time = time.process_time()
 
-    async def time(self, duration):
+    async def time(self, duration:int):
         "Allows to count the cumulated time of robots activity"
         await asyncio.sleep(duration*TIME_UNIT)
         self.clock += duration
@@ -30,7 +32,7 @@ class FoobarFactory:
         "Adds a robot to the factory"
         self.robots.append(Robot(self))
 
-    async def take_over_foobar_market(self, robot):
+    async def take_over_foobar_market(self, robot:Robot):
         "Determines and performs the actions required to buy a robot or buys a robot"
         take_over_code = await robot.buy_robot(self.warehouse, self.wallet)
         if take_over_code == "need foo":
@@ -49,18 +51,18 @@ class Warehouse:
     def __init__(self):
         self._warehouse = {'foo':[], 'bar':[], 'foobar':[]}
 
-    def get(self, material_type):
+    def get(self, material_type:str) -> int:
         "Returns amount of given material"
         return len(self._warehouse[material_type])
 
-    def take(self, material_type, amount=1):
+    def take(self, material_type:str, amount:int=1) -> RawMaterial:
         "Hands over material from warehouse"
         if self.get(material_type)<amount:
             exception_message = f"{self.get(material_type)} {material_type} in warehouse, cannot take {amount}"
             raise Exception(exception_message)
         return self._warehouse[material_type].pop()
 
-    def store(self, raw_material):
+    def store(self, raw_material:RawMaterial):
         "Stores given material from warehouse"
         self._warehouse[raw_material.material_type].append(raw_material)
 
@@ -72,13 +74,13 @@ class Wallet:
     def __init__(self):
         self._wallet = 0
 
-    def set(self, amount):
+    def set(self, amount:int):
         "Adds or substracts given amount of cash"
         self._wallet += amount
 
-    def get(self):
+    def get(self) -> int:
         "Returns amount of cash"
         return self._wallet
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"€{self._wallet}"

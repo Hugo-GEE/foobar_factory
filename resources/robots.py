@@ -1,3 +1,4 @@
+from __future__ import annotations
 import time
 import math
 import asyncio
@@ -5,6 +6,7 @@ import logging
 from typing import Optional
 from resources.material import *
 from resources.tools import *
+
 
 random.seed(SEED)
 
@@ -15,27 +17,27 @@ class Robot:
     robot_offest = ROBOT_OFFSET
 
     @classmethod
-    def incr(self)->str:
+    def incr(cls)->str:
         "Ensures each robot gets a different name"
         if len(ROBOT_NAMES) >= 1:
             return ROBOT_NAMES.pop()
         else:
-            self.robot_offest += 1
-            return f"robot_{self.robot_offest}"
+            cls.robot_offest += 1
+            return f"robot_{cls.robot_offest}"
 
     def __init__(self, parent:FoobarFactory):
         self.name = self.incr()
         self.time = parent.time
         self.activity = None
 
-    async def manage_activity(self, activity):
+    async def manage_activity(self, activity: Optional[str]):
         "Moving to change activity: occupies the robot for 5 seconds"
         if self.activity is not None and self.activity != activity:
             logging.debug(f"[{self.name}] changing from {self.activity} to {activity}")
             await self.time(5)
             self.activity = activity
 
-    async def produce_foobars(self, warehouse):
+    async def produce_foobars(self, warehouse:Warehouse):
         "Determines and performs the actions necessary to produce a foobar or produces a foobar"
         producton_code = await self.assemble_foobar(warehouse)
         if producton_code == 'need foo':
@@ -43,7 +45,7 @@ class Robot:
         elif producton_code == 'need bar':
             await self.mine('bar', warehouse)
 
-    async def mine(self, material_type, warehouse):
+    async def mine(self, material_type:str, warehouse:Warehouse):
         """Mine material. Occupies the robot for 1 second"""
         if material_type == 'foo':
             await self.manage_activity("mining foo")
@@ -58,7 +60,7 @@ class Robot:
             result = warehouse.store((mined_bar := Bar()))
             logging.debug(f"[{self.name}] Mined {mined_bar}\n")
 
-    async def assemble_foobar(self, warehouse):
+    async def assemble_foobar(self, warehouse:Warehouse) -> Optional[str]:
         """Assembling a foobar from a foo and a bar: keeps robot busy for 2 seconds.
         60% chance of success; in case of failure, bar can be reused, foo is lost"""
 
@@ -79,13 +81,11 @@ class Robot:
             logging.debug(f"[{self.name}] Assembly successful")
             warehouse.store((foobar := Foobar(foo, bar)))
             logging.debug(f"[{self.name}] {foobar} is being stored\n")
-            return 0
         else:
             logging.debug(f"[{self.name}] Assembly failed\n")
             warehouse.store(bar)
-            return 1
 
-    async def sell_foobar(self, warehouse, wallet):
+    async def sell_foobar(self, warehouse:Warehouse, wallet:Wallet) -> Optional[str]:
         """Sell foobar: 10s to sell from 1 to 5 foobar, we earn €1 per foobar sold"""
 
         logging.debug(f"[{self.name}] Selling foobar")
@@ -103,7 +103,7 @@ class Robot:
         foobar_market.clear()
         logging.debug(f"[{self.name}] Sold {foobar_batch} foobar(s)\n")
 
-    async def buy_robot(self, warehouse, wallet):
+    async def buy_robot(self, warehouse:Warehouse, wallet:Wallet) -> Optional[str]:
         logging.debug(f"[{self.name}] Trying to buy robot")
         if warehouse.get('foo') < 6:
             logging.debug(f"[{self.name}] Not enough foo to buy robot")
