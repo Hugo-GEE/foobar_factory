@@ -1,13 +1,11 @@
+"""Contains composite class implementation of factory
+and two of its components : warehouse and wallet"""
+
 from __future__ import annotations
 import time
-import math
-import random
-import configparser
 import asyncio
-import logging
-from typing import Union
 from resources.robots import Robot
-from resources.tools import *
+from resources.tools import TIME_UNIT
 
 
 class FoobarFactory:

@@ -1,3 +1,5 @@
+"Contains some additional functions and config"
+
 from __future__ import annotations
 import configparser
 import argparse

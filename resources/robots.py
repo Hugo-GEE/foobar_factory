@@ -1,11 +1,11 @@
+"Contains class implementation of robots"
+
 from __future__ import annotations
-import time
-import math
-import asyncio
 import logging
+import random
 from typing import Optional
 from resources.material import *
-from resources.tools import *
+from resources.tools import SEED, ROBOT_OFFSET, ROBOT_NAMES
 
 
 random.seed(SEED)
@@ -21,9 +21,8 @@ class Robot:
         "Ensures each robot gets a different name"
         if len(ROBOT_NAMES) >= 1:
             return ROBOT_NAMES.pop()
-        else:
-            cls.robot_offest += 1
-            return f"robot_{cls.robot_offest}"
+        cls.robot_offest += 1
+        return f"robot_{cls.robot_offest}"
 
     def __init__(self, parent:FoobarFactory):
         self.name = self.incr()
@@ -104,6 +103,7 @@ class Robot:
         logging.debug(f"[{self.name}] Sold {foobar_batch} foobar(s)\n")
 
     async def buy_robot(self, warehouse:Warehouse, wallet:Wallet) -> Optional[str]:
+        "Returns missing resources to buy a robot or take resources to buy robot"
         logging.debug(f"[{self.name}] Trying to buy robot")
         if warehouse.get('foo') < 6:
             logging.debug(f"[{self.name}] Not enough foo to buy robot")

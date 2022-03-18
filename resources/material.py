@@ -1,11 +1,5 @@
-import time
-import math
-import random
-import configparser
-import asyncio
-
-config = configparser.ConfigParser()
-config.read("config")
+"Contains raw material classes implementations"
+from resources.tools import config
 
 TIME_UNIT = float(config['PARAMS']['time_unit'])
 
