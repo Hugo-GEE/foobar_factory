@@ -4,7 +4,7 @@ from __future__ import annotations
 import logging
 import random
 from typing import Optional
-from resources.material import *
+from resources.material import Foo, Bar, Foobar
 from resources.tools import SEED, ROBOT_OFFSET, ROBOT_NAMES
 
 
@@ -50,13 +50,13 @@ class Robot:
             await self.manage_activity("mining foo")
             logging.debug(f"[{self.name}] Mining foo\n")
             await self.time(1)
-            result = warehouse.store((mined_foo := Foo()))
+            warehouse.store((mined_foo := Foo()))
             logging.debug(f"[{self.name}] Mined {mined_foo}\n")
         if material_type == 'bar':
             await self.manage_activity("mining bar")
             logging.debug(f"[{self.name}] Mining bar\n")
             await self.time(random.uniform(0.5, 2))
-            result = warehouse.store((mined_bar := Bar()))
+            warehouse.store((mined_bar := Bar()))
             logging.debug(f"[{self.name}] Mined {mined_bar}\n")
 
     async def assemble_foobar(self, warehouse:Warehouse) -> Optional[str]:

@@ -1,18 +1,16 @@
-import time
-import math
+"Orchestrates the program"
+
 import random
-import configparser
 import asyncio
 import logging
-from resources.factory import *
-from resources.tools import *
+from typing import List
+import argparse
+from resources.factory import FoobarFactory
+from resources.tools import report, SEED
 
-async def main(robots_to_finish:int = 30):
+async def main(foobar_factory:FoobarFactory, robots_to_finish:int = 30) -> List[str]:
     """Instantiate Robots and produce foobars"""
     round_counter = 0
-    foobar_factory = FoobarFactory()
-    foobar_factory.add_robot()
-    foobar_factory.add_robot()
     while len(foobar_factory.robots) < robots_to_finish:
         logging.debug(report(foobar_factory, round_counter))
         round_counter += 1
@@ -22,10 +20,15 @@ async def main(robots_to_finish:int = 30):
 
     logging.info(report(foobar_factory, round_counter, final=True))
     logging.info("\nFoobar market domination achieved. Next, world.\n")
-    return report(foobar_factory, round_counter, final=True, json=True)
+    return report(foobar_factory, round_counter, json=True)
 
 
 if __name__ == "__main__":
+
+    ap = argparse.ArgumentParser()
+    ap.add_argument("-r", "--robots", required=False, help="Number of robots to attain foobar market domination")
+    ap.add_argument("-v", "--verbose", required=False, help="Level of verbosity :'debug' or 'info' (none by default)")
+    args = vars(ap.parse_args())
 
     logging.getLogger('asyncio').setLevel(logging.WARNING)
     if args.get('verbose') == 'debug':
@@ -37,4 +40,7 @@ if __name__ == "__main__":
 
     random.seed(SEED)
 
-    asyncio.run(main(int(args['robots'])))
+    if 'robots' in args and args['robots'] is not None:
+        asyncio.run(main(FoobarFactory(), int(args['robots'])))
+    else:
+        asyncio.run(main(FoobarFactory()))

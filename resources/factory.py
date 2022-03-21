@@ -12,19 +12,19 @@ class FoobarFactory:
 
     """Represents our factory, with robots, production line and warehouse"""
 
-    def __init__(self):
+    def __init__(self, number_of_robots:int=2):
         self.warehouse = Warehouse()
-        self.robots = []
+        self.robots = [Robot(self) for _ in range(number_of_robots)]
         self.wallet = Wallet()
-        self.clock = 0
-        self.round_counter = 0
+        self.clock = []
+        self.round = 0
         self.start_time = time.time()
         self.start_cpu_time = time.process_time()
 
     async def time(self, duration:int):
         "Allows to count the cumulated time of robots activity"
         await asyncio.sleep(duration*TIME_UNIT)
-        self.clock += duration
+        self.clock.append(duration)
 
     def add_robot(self):
         "Adds a robot to the factory"
@@ -63,6 +63,9 @@ class Warehouse:
     def store(self, raw_material:RawMaterial):
         "Stores given material from warehouse"
         self._warehouse[raw_material.material_type].append(raw_material)
+
+    def __repr__(self):
+        return f"{self.get('foobar')} foobars | {self.get('foo')} foos | {self.get('bar')} bars"
 
 
 class Wallet:
